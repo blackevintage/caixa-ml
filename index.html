@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard ECOM — BV & Artcup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d0f14; --bg2:#13161e; --bg3:#1a1e28; --bg4:#222636;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+  --text:#e8eaf2; --text2:#8890a8; --text3:#454d66;
+  --green:#00d68f; --green-dim:rgba(0,214,143,0.12);
+  --red:#ff4d6d; --red-dim:rgba(255,77,109,0.12);
+  --blue:#4da6ff; --blue-dim:rgba(77,166,255,0.12);
+  --yellow:#ffc83a; --yellow-dim:rgba(255,200,58,0.12);
+  --purple:#a87bff; --purple-dim:rgba(168,123,255,0.12);
+  --orange:#ff8c42; --orange-dim:rgba(255,140,66,0.12);
+  --accent:#00d68f; --r:10px; --r2:16px;
+  --font:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px}
+.logo{font-size:14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.logo-pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nav-btn{padding:5px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.nav-btn:hover{background:var(--bg3)}
+.nav-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.nav-btn.danger{border-color:rgba(255,77,109,.35);color:var(--red)}
+.nav-btn.danger:hover{background:var(--red-dim)}
+.status-chip{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--text3)}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+/* ── LAYOUT ── */
+.main{max-width:1380px;margin:0 auto;padding:1.25rem}
+
+/* ── ALERTS ── */
+.alert{padding:10px 14px;border-radius:10px;font-size:12px;margin-bottom:12px;display:none;align-items:center;gap:8px}
+.alert.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.alert.err{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,109,.2)}
+.alert.info{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)}
+.alert.show{display:flex}
+
+/* ── UPLOAD ── */
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.25rem}
+.upload-zone:hover,.upload-zone.over{border-color:var(--accent);background:rgba(0,214,143,.04)}
+.upload-zone h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.upload-zone p{font-size:12px;color:var(--text2)}
+.upload-zone small{font-size:11px;color:var(--text3);display:block;margin-top:6px}
+.upload-icon{font-size:36px;opacity:.4;margin-bottom:10px}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
+.filter-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+select{height:32px;padding:0 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;cursor:pointer}
+select:focus{border-color:var(--accent)}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem 1.1rem;transition:border-color .2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:5px}
+.kpi-value{font-size:20px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em}
+.kpi-sub{font-size:10px;color:var(--text2);margin-top:3px;font-family:var(--mono)}
+.g{color:var(--green)}.r{color:var(--red)}.b{color:var(--blue)}.y{color:var(--yellow)}.p{color:var(--purple)}.o{color:var(--orange)}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── PANELS ── */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.1rem}
+.panel-hd{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.9rem;display:flex;align-items:center;justify-content:space-between}
+.panel-hd span{font-size:10px;font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0}
+
+/* ── CHARTS ── */
+.chart-wrap{position:relative;height:240px}
+.chart-wrap.tall{height:280px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow:auto;max-height:360px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;position:sticky;top:0;background:var(--bg2);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--mono);font-size:11px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.td-name{font-family:var(--font);font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-id{font-size:10px;color:var(--yellow);font-family:var(--mono);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.badge.bv{background:var(--blue-dim);color:var(--blue)}
+.badge.art{background:var(--purple-dim);color:var(--purple)}
+.badge.ml{background:var(--yellow-dim);color:var(--yellow)}
+.badge.sh{background:var(--orange-dim);color:var(--orange)}
+
+/* ── BAR MINI ── */
+.bar-wrap{display:flex;align-items:center;gap:5px;min-width:60px}
+.bar-bg{flex:1;height:4px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--green);transition:width .4s}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:3px;margin-bottom:.9rem}
+.tab{padding:4px 12px;border-radius:7px;border:none;background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.tab.active{background:var(--bg4);color:var(--text)}
+.tab:hover:not(.active){background:rgba(255,255,255,.04)}
+
+/* ── DIÁRIO/SEMANAL ── */
+.dw-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:8px}
+.dw-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.dw-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.dw-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.8rem .9rem;position:relative;overflow:hidden}
+.dw-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.5}
+.dw-card.wk::before{background:var(--blue)}
+.dw-card-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px}
+.dw-card-val{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.dw-card.wk .dw-card-val{color:var(--blue)}
+.dw-card-sub{font-size:9px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
+.week-bars{display:flex;align-items:flex-end;gap:3px;height:52px;margin-top:8px}
+.wbar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.wbar-fill{width:100%;border-radius:3px 3px 0 0;background:var(--blue);opacity:.65;min-height:2px;transition:height .4s}
+.wbar-fill.cur{background:var(--accent);opacity:1}
+.wbar-lbl{font-size:8px;color:var(--text3);font-family:var(--mono)}
+.trend-up{color:var(--green)}.trend-dn{color:var(--red)}.trend-flat{color:var(--text3)}
+
+
+/* ── METAS ── */
+.meta-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.1rem;margin-bottom:10px}
+.meta-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.meta-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+.meta-edit-btn{padding:4px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.meta-edit-btn:hover{background:var(--bg3);color:var(--text)}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.meta-item{display:flex;flex-direction:column;gap:6px}
+.meta-label{font-size:10px;color:var(--text2);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.meta-label span{font-family:var(--mono);color:var(--text)}
+.progress-track{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;position:relative}
+.progress-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);position:relative}
+.progress-fill.ok{background:var(--green)}
+.progress-fill.warn{background:var(--yellow)}
+.progress-fill.danger{background:var(--red)}
+.progress-fill.over{background:var(--green);box-shadow:0 0 8px var(--green)}
+.meta-nums{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono)}
+.meta-nums .done{color:var(--green);font-weight:600}
+.meta-nums .rest{color:var(--text3)}
+.meta-nums .over{color:var(--green);font-weight:700}
+.meta-pct{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.meta-pct.warn{color:var(--yellow)}
+.meta-pct.danger{color:var(--red)}
+/* Modal de metas */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:1.5rem;width:420px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:14px;font-weight:700;margin-bottom:1rem}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.modal-field{display:flex;flex-direction:column;gap:4px}
+.modal-field label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.modal-field input{height:34px;padding:0 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;width:100%}
+.modal-field input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.btn-save{padding:7px 20px;border-radius:8px;border:none;background:var(--accent);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.btn-cancel{padding:7px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.ritmo-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.ritmo-chip.ok{background:var(--green-dim);color:var(--green)}
+.ritmo-chip.warn{background:var(--yellow-dim);color:var(--yellow)}
+.ritmo-chip.danger{background:var(--red-dim);color:var(--red)}
+
+
+/* ── DETALHE DIÁRIO ── */
+.day-filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)}
+.day-filter-bar label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+input[type=date]{height:32px;padding:0 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;cursor:pointer;color-scheme:dark}
+input[type=date]:focus{border-color:var(--accent)}
+.day-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.day-sum-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .9rem}
+.day-sum-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:3px}
+.day-sum-val{font-size:15px;font-weight:700;font-family:var(--mono)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:12px}
+.empty-ico{font-size:36px;display:block;margin-bottom:8px;opacity:.25}
+
+/* ── CUSTOS NAO MAPEADOS ── */
+.warn-badge{display:inline-flex;align-items:center;gap:4px;background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,200,58,.2);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-pulse"></div>Dashboard ECOM</div>
+  <div class="topbar-right">
+    <div class="status-chip">
+      <div class="status-dot"></div>
+      <span id="storage-size">0 registros</span>
+    </div>
+    <button class="nav-btn" id="nb-daily" onclick="setMode('daily')">📅 Diário</button>
+    <button class="nav-btn active" id="nb-hist" onclick="setMode('hist')">📊 Histórico</button>
+    <button class="nav-btn" id="nb-imp" onclick="setMode('imp')">📥 Importar</button>
+    <button class="nav-btn danger" onclick="limparDados()">🗑 Limpar</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="msg-alert" class="alert"></div>
+
+  <!-- FILTROS -->
+  <div class="filters" id="filtros">
+    <span class="filter-label">Filtrar:</span>
+    <select id="f-ano" onchange="renderAll()"><option value="">Todos os anos</option></select>
+    <select id="f-mes" onchange="renderAll()"><option value="">Todos os meses</option></select>
+    <select id="f-emp" onchange="renderAll()">
+      <option value="">Todas empresas</option>
+      <option>Artcup</option>
+      <option>Black Vintage</option>
+    </select>
+    <select id="f-canal" onchange="renderAll()">
+      <option value="">Todos canais</option>
+      <option>Mercado Livre</option>
+      <option>Shopee</option>
+    </select>
+  </div>
+
+  <!-- IMPORTAR -->
+  <div id="sec-imp" style="display:none">
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('f-xlsx').click()">
+      <div class="upload-icon">📊</div>
+      <h3>Importar planilha de vendas</h3>
+      <p>Mercado Livre ou Shopee — arraste ou clique para selecionar</p>
+      <small>Detecta automaticamente a plataforma · dados salvos no navegador</small>
+    </div>
+    <input type="file" id="f-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importar(this)">
+  </div>
+
+  <!-- DIÁRIO -->
+  <div id="sec-daily" style="display:none">
+    <div class="dw-hd">
+      <div class="dw-title"><div class="live-dot"></div>Acompanhamento diário & semanal</div>
+      <select id="dw-emp" onchange="renderDW()">
+        <option value="">Todas empresas</option>
+        <option>Black Vintage</option>
+        <option>Anti Estilhaço</option>
+        <option>BVEcom</option>
+      </select>
+    </div>
+    <div class="dw-cards" id="dw-day"></div>
+    <!-- PAINEL DE METAS -->
+    <div class="meta-panel" id="meta-panel">
+      <div class="meta-hd">
+        <span class="meta-title">🎯 Progresso de lucro — metas mensais</span>
+        <button class="meta-edit-btn" onclick="abrirModal()">✏️ Editar metas</button>
+      </div>
+      <div class="meta-grid" id="meta-grid">
+        <div style="color:var(--text3);font-size:12px">Clique em "Editar metas" para cadastrar suas metas mensais.</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <div class="panel-hd">Semana atual <span id="dw-week-range"></span></div>
+        <div class="dw-cards" id="dw-week" style="margin-bottom:0"></div>
+        <div class="week-bars" id="week-bars"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">Últimos 7 dias</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Vendas</th><th>Lucro</th><th>Pedidos</th><th>vs anterior</th></tr></thead>
+            <tbody id="dw-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd">Comparativo — últimas 4 semanas</div>
+      <div class="chart-wrap"><canvas id="ch-weeks"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="sec-hist">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value g" id="k-fat">—</div><div class="kpi-sub" id="k-qtd">— pedidos</div></div>
+      <div class="kpi"><div class="kpi-label">Lucro líquido</div><div class="kpi-value g" id="k-lucro">—</div><div class="kpi-sub" id="k-margem">margem —</div></div>
+      <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value b" id="k-ticket">—</div><div class="kpi-sub">por pedido</div></div>
+      <div class="kpi"><div class="kpi-label">Tarifas totais</div><div class="kpi-value r" id="k-tarifas">—</div><div class="kpi-sub" id="k-tar-pct">—</div></div>
+      <div class="kpi"><div class="kpi-label">Custo produtos</div><div class="kpi-value y" id="k-custo">—</div><div class="kpi-sub" id="k-cus-pct">—</div></div>
+      <div class="kpi"><div class="kpi-label">Embalagens</div><div class="kpi-value o" id="k-emb">—</div><div class="kpi-sub" id="k-emb-pct">—</div></div>
+      <div class="kpi"><div class="kpi-label">NF estimada</div><div class="kpi-value p" id="k-nf">—</div><div class="kpi-sub" id="k-nf-aliq">—</div></div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <div class="panel-hd">Faturamento mensal</div>
+        <div class="chart-wrap"><canvas id="ch-fat"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">Lucro mensal</div>
+        <div class="chart-wrap"><canvas id="ch-lucro"></canvas></div>
+      </div>
+    </div>
+
+    <div class="g3" style="margin-top:10px">
+      <div class="panel">
+        <div class="panel-hd">Por empresa</div>
+        <div class="chart-wrap"><canvas id="ch-emp"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">Por canal</div>
+        <div class="chart-wrap"><canvas id="ch-canal"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">Composição de custos</div>
+        <div class="chart-wrap"><canvas id="ch-custos"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:10px">
+      <div class="panel-hd">
+        Top produtos
+        <span id="sem-custo-warn"></span>
+      </div>
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('fat',this)">Faturamento</button>
+        <button class="tab" onclick="setTab('lucro',this)">Lucro</button>
+        <button class="tab" onclick="setTab('qtd',this)">Quantidade</button>
+      </div>
+      <div class="tbl-wrap" id="top-tbl">
+        <div class="empty"><span class="empty-ico">📦</span>Importe uma planilha para começar.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MAPA SHOPEE: ID do Produto → { sku, nome }
+// ═══════════════════════════════════════════════════════
+const SHOPEE_MAP = {
+  '58261585173': { sku: '', nome: 'Kit Quadros Decorativos Escandinavos Japandi Minimalista' },
+  '58261582470': { sku: '', nome: 'Quadros Decorativos Cantinho do Café Cozinha Moderna' },
+  '58261581697': { sku: '', nome: 'Kit Quadros Decorativos Botânicos Minimalistas' },
+  '58261153656': { sku: '3039', nome: 'Plaquinha Religiosa Lugar Abençoado Por Deus' },
+  '58260358499': { sku: '', nome: 'Espelho Decorativo 45x95 Moldura Slim' },
+  '58259845196': { sku: '', nome: 'Placa MDF Sisal Frase Religiosa Namorados' },
+  '58259843106': { sku: '', nome: 'Plaquinha Mdf Presente Dia Namorados' },
+  '58259335831': { sku: '3527', nome: 'Quadro Grande Loja Roupa Moda Mulher Vestido' },
+  '58256578533': { sku: 'new-trio-016', nome: 'Trio Quadros Vasos Minimalistas Elegantes' },
+  '58256578032': { sku: 'new-trio-015', nome: 'Trio Floral Clean Dourado Boho Magnólia' },
+  '58256572715': { sku: 'new-trio-013', nome: 'Trio Árvore da Vida Mármore Azul Dourado' },
+  '58256414755': { sku: 'new-trio-010', nome: 'Trio Barber Shop Caveira Navalha Barbearia' },
+  '58255966226': { sku: 'PQ-JAN-027', nome: 'Plaquinha Boas Energias Sempre Good Vibes' },
+  '58255961137': { sku: '', nome: 'Plaquinha Esta Família É Abençoada Por Jesus' },
+  '58255959979': { sku: '', nome: 'Plaquinha Aqui Brindamos À Vida Vinho Cerveja' },
+  '58255958632': { sku: '', nome: 'Plaquinha Canto Churrasco Família Cerveja Gelada' },
+  '58255649856': { sku: 'k2-011', nome: 'Dupla Boho Chic O Senhor É Meu Pastor' },
+  '58255645004': { sku: 'k2-003', nome: 'Dupla Boho Chic Organizar Não É Arrumar A Casa' },
+  '58255642937': { sku: 'k2-010', nome: 'Dupla Boho Chic Seu Futuro Agradece' },
+  '58255642742': { sku: 'k2-009', nome: 'Dupla Boho Chic A Disciplina Sustenta' },
+  '58255641917': { sku: 'k2-004', nome: 'Dupla Boho Chic Recomeços Exigem Coragem' },
+  '58250098541': { sku: '3051', nome: 'Plaquinha Salmo 91 Esconderijo do Altissimo' },
+  '58211595950': { sku: '', nome: 'Kit Quadros Natureza Calma Paisagem Minimalista' },
+  '58211590666': { sku: '', nome: 'Quadros Home Decor Tons Terrosos Lar Doce Lar' },
+  '58211584380': { sku: '', nome: 'Kit Quadros Florais Modernos Decoração Feminina' },
+  '58211581088': { sku: '', nome: 'Kit Quadros Abstratos Terracota 20x20' },
+  '58209898314': { sku: '', nome: 'Plaquinha MDF Bem Estar Paz Equilíbrio Gratidão' },
+  '58209868675': { sku: '', nome: 'Placa MDF Bem Estar Gratidão Paz Espiritualidade' },
+  '58209828406': { sku: '', nome: 'Placa Frases Legais Entrada Casa Porta Parede' },
+  '58209827795': { sku: '', nome: 'Plaquinha MDF Religiosa Lar Abençoado Bem Vindo' },
+  '58209827004': { sku: '', nome: 'Placa MDf Cordinha Frase Religiosa Decoração Cristã' },
+  '58209651604': { sku: '1424', nome: 'Quadro 65x95 Loja Roupa Moda Modelo Vestido' },
+  '58209507225': { sku: '', nome: 'Placa Você Não É Todo Mundo Chef Dia Das Mães' },
+  '58209506520': { sku: '', nome: 'Placa Amor De Mãe Minha Casa É Onde Você Está' },
+  '58208419498': { sku: 'kit-15x21-pers', nome: 'Kit 4 Quadros 20x26 Personalizado Foto Arte' },
+  '58206579418': { sku: 'new-trio-019', nome: 'Trio Religioso Familia Leão Amor Sacrificial' },
+  '58206573759': { sku: 'new-trio-012', nome: 'Trio Abstrato Geométrico Moderno Clean' },
+  '58206420571': { sku: 'new-trio-009', nome: 'Trio Decoração Náutica Praia Mar Coqueiros' },
+  '58206420142': { sku: 'new-trio-008', nome: 'Trio Gratidão Boho Chic Entrega Confia Espera' },
+  '58206415096': { sku: 'new-trio-007', nome: 'Trio Boho Chic Geométrico Árvore Terracota' },
+  '58206413883': { sku: '', nome: 'Trio Gratidão Boho O Essencial É Leve' },
+  '58206413597': { sku: 'new-trio-004', nome: 'Trio Gratidão Boho Pena Vaso Capim' },
+  '58206413051': { sku: 'new-trio-002', nome: 'Trio Restaurante Pães Artesanais Padaria' },
+  '58206408939': { sku: '', nome: 'Trio Floral Clean Dourado Peônia Tulipa Margarida' },
+  '58206333690': { sku: '', nome: 'Porta Chaves Decorativo Personalizado Casal' },
+  '58206311762': { sku: 'new-trio-001', nome: 'Trio Bar Cozinha Vinho Whisky Queijo Sal' },
+  '58205666464': { sku: 'k2-015', nome: 'Dupla Boho Sou Eternamente Grato Amor Infinito' },
+  '58205666253': { sku: 'k2-014', nome: 'Dupla Boho Nos Meus Desafios Proteção Divina' },
+  '58205665836': { sku: 'k2-013', nome: 'Dupla Boho Confio Na Providência Divina' },
+  '58205657200': { sku: 'k2-006', nome: 'Dupla Boho Rotina Não É Prisão É Direção' },
+  '58205655008': { sku: 'k2-001', nome: 'Dupla Boho Seja Fiel Ao Caminho Prometeu' },
+  '58200428654': { sku: 'PQ-new017', nome: 'Plaquinha Tudo Aqui Já Foi Um Sonho' },
+  '58200099279': { sku: '', nome: 'Plaquinha Vida de Praia Tão Doce Quanto O Mar' },
+  '23999355825': { sku: 'new-trio-018', nome: 'Trio Folhas Orgânicas Abstratas Arte Botânica' },
+  '23998730926': { sku: 'PQ013-3p', nome: 'Plaquinha Na Casa Da Vovó Pode Tudo Neto e Avó' },
+  '23997362218': { sku: '1139', nome: 'Quadro Carro Fusca Verde Rebaixado Vintage' },
+  '23994608125': { sku: '', nome: 'Plaquinha Religiosa Feliz Natal Jesus Nasceu' },
+  '23898762352': { sku: '', nome: 'Plaquinha Seja Bem Vindo Falar Mal Cachorro' },
+  '23897369513': { sku: '', nome: 'Quadro Barbearia Vintage Barber Shop Barbeiro' },
+  '23892570345': { sku: '', nome: 'Quadro Barbearia Barbeiro Cliente Corte Cabelo' },
+  '23799464083': { sku: 'PQ-NEW015', nome: 'Plaquinha Café Despertar Água Hidratar Vinho Feliz' },
+  '23799378750': { sku: 'new-trio-014', nome: 'Trio Abstrato Geométrico Preto Dourado Sala' },
+  '23797370910': { sku: '2153', nome: 'Quadro Barbearia Corte Infantil Tesoura' },
+  '23797356762': { sku: '', nome: 'Quadro Sala Quarto Frase Oração Pai Nosso' },
+  '23794248530': { sku: '', nome: 'Quadro Cristão Vitral Colorido Jesus Cristo 4K' },
+  '23792865711': { sku: '1786', nome: 'Quadro Carro Fusca Branco Vintage Clássico' },
+  '23699354217': { sku: 'k2-012', nome: 'Dupla Boho Agradeço Ao Senhor Por Cada Bênção' },
+  '23698750098': { sku: 'ifx-036', nome: 'Quadro Consultorio Sala Minimalista Flores Dourado' },
+  '23698746815': { sku: 'ifx-052', nome: 'Quadro Leoa Rainha Coroa Mãe Filhote Filha 4k' },
+  '23698739743': { sku: 'PQ005-3p', nome: 'Plaquinha Proibido Dançar Na Cozinha' },
+  '23694253423': { sku: 'ifx-029', nome: 'Quadro Sala Leoa Mãe Amor Materno Filhote' },
+  '23694248093': { sku: '', nome: 'Quadro Sala Familia Três Filhotes Leoa Mãe' },
+  '23694238017': { sku: '', nome: 'Quadro Grande Leoa Coroa Mãe Quatro Filhotes' },
+  '23693126762': { sku: '', nome: 'Porta Cartas Chaves Personalizado Foto Arte' },
+  '23692865437': { sku: '', nome: 'Quadro Carro Fusca Vermelho Rebaixado Vintage' },
+  '23692683732': { sku: '0757', nome: 'Quadro Frase Engraçada Regras Da Família' },
+  '23599485275': { sku: 'PQ-NEW08', nome: 'Plaquinha Sorria Depois A Gente Acha O Motivo' },
+  '23598741365': { sku: 'PQ015-3p', nome: 'Plaquinha Porque Deus Tanto Amou O Mundo João 3:16' },
+  '23598736079': { sku: 'PQ002-3p', nome: 'Plaquinha Deixe a Rua Lá Fora Tire Os Sapatos' },
+  '23592877995': { sku: '', nome: 'Quadro Barbearia Barber Shop Corte Cabelo Navalha' },
+  '23592667576': { sku: '3107', nome: 'Quadro Que Na Vida Não Falte Café Nem Bolo' },
+  '23499444601': { sku: '', nome: 'Plaquinha MDF Quarto do Casal Frase Amor' },
+  '23499444438': { sku: '', nome: 'Placa MDF Frase Casa Familia Presente Barato' },
+  '23499349162': { sku: 'k2-008', nome: 'Dupla Boho Nada Floresce No Caos Cuide Do Terreno' },
+  '23498012263': { sku: '1833', nome: 'Quadro Cozinha Gourmet Colheres Tempero Condimentos' },
+  '23494618140': { sku: '', nome: 'Plaquinha Religiosa Natalina Gratidão Paz Luz' },
+  '23494239448': { sku: 'PQ008-3p', nome: 'Plaquinha A Casa É Das Plantas Eu Só Moro Aqui' },
+  '23398508906': { sku: '', nome: 'Quadro Escritório Deusa Justiça Direito Advocacia' },
+  '23397161596': { sku: '3527', nome: 'Quadro Loja Roupa Moda Modelo Mulher Vestido Bolsa' },
+  '23394395424': { sku: 'PQ-New012', nome: 'Plaquinha Good Vibes Dias Melhores Verão Praia' },
+  '23392674145': { sku: '', nome: 'Quadro Academia Frase Motivacional Corpo Reflexo' },
+  '23294628014': { sku: '', nome: 'Plaquinha Feliz Natal Paz Amor Gratidão 2026' },
+  '23199460121': { sku: '', nome: 'Presente Personalizado Namorados Quadro Chaveiro' },
+  '23199354253': { sku: 'k2-002', nome: 'Dupla Boho Pequenas Ações Diárias Futuros Gigantes' },
+  '23194953022': { sku: '', nome: 'Placa Cozinha Gourmet Cantinho Café Cafeteira' },
+  '23192892254': { sku: '3255', nome: 'Quadro Sala Loja Roupa Moda Mulher Poder Jóias' },
+  '23098891861': { sku: 'PQ-New013', nome: 'Plaquinha Não Mexa Nas Plantas A Dona É Louca' },
+  '22999160132': { sku: '', nome: 'Plaquinha Lar Abençoado Por Deus MDF Sisal' },
+  '22997361227': { sku: '2106', nome: 'Quadro Carro Azul Rebaixado Vintage Sala Quarto' },
+  '22897367462': { sku: '2918', nome: 'Quadro Carro Vintage Rebaixado Retrô Sala Quarto' },
+  '22894865178': { sku: '', nome: 'Plaquinha Confie Em Deus Sempre Ore Sem Cessar' },
+  '22797351581': { sku: '2043', nome: 'Quadro Sala Seja Bem Vindo Faz Parte Nossa História' },
+  '22797169151': { sku: '', nome: 'Quadro Bar Boteco Aviso Engraçado Decoração' },
+  '22797162777': { sku: '0769', nome: 'Quadro Senha Wifi Cerveja Não Se Nega A Ninguém' },
+  '22794238957': { sku: 'PQ007-3p', nome: 'Plaquinha O Melhor Lugar Casa Da Vovó E Do Vovô' },
+  '22792661793': { sku: '', nome: 'Quadro Quando Era Criança Morria Medo De Bêbado' },
+  '22699379605': { sku: 'new-trio-017', nome: 'Trio Vasos Arte Moderna Boho Pampas Bege Dourado' },
+  '22698772434': { sku: 'PQ030-3p', nome: 'Plaquinha Seja Bem Vindo Falar Mal Gato Não Volta' },
+  '22698772260': { sku: 'PQ038-3p', nome: 'Plaquinha Retire Os Sapatos Aviso Divertida' },
+  '22694960810': { sku: '', nome: 'Plaquinha Casa Dominada Por Pets Petshop' },
+  '22694890660': { sku: 'new-trio-003', nome: 'Trio Gratidão Boho Capim Dente de Leão' },
+  '22694867365': { sku: 'k2-005', nome: 'Dupla Boho Se Não Existir Oportunidade Crie Espaço' },
+  '22694275726': { sku: 'PQ039-3p', nome: 'Plaquinha Não Gosto De Receber Visitas Não Insista' },
+  '22599370373': { sku: 'PQ-JAN-022', nome: 'Plaquinha Aqui É Bom Cerveja Gelada E Amigos' },
+  '22598170251': { sku: '', nome: '100 Chaveiros Personalizados Empresa Festa Casamento' },
+  '22499383511': { sku: '', nome: 'Plaquinha Salmo 23 O Senhor É O Meu Pastor' },
+  '22497381303': { sku: '', nome: 'Quadro Decorativo Petiscos Porção Carne Batata' },
+  '22497366682': { sku: '', nome: 'Quadro Carro Rebaixado Vermelho Vintage Retrô 4k' },
+  '22494651315': { sku: 'Pq-new016', nome: 'Plaquinha Girassol Coisas Boas Acontecem Aqui' },
+  '22494248794': { sku: 'PQ019-3p', nome: 'Plaquinha Eu Sou O Caminho A Verdade João 14:6' },
+  '22399050860': { sku: '', nome: 'Plaquinha Desejamos Amor Luz Natal' },
+  '22392871206': { sku: '1136', nome: 'Quadro Kombi Amarelo Rebaixado Vintage Retrô' },
+  '22299157257': { sku: '3083', nome: 'Plaquinha Proibida Entrada Más Energias Olho Grego' },
+  '22299144832': { sku: '', nome: 'Plaquinha Religiosa Feliz Natal Seja Amor Ano Novo' },
+  '22297180176': { sku: '3075', nome: 'Quadro Fui Atrás Da Felicidade Voltei Com Um Look' },
+  '22198942267': { sku: '', nome: 'Quadro Grande Personalizado Foto Imagem Arte' },
+  '22194975573': { sku: '', nome: 'Plaquinha MDF Cantinho do Café Frases Legais' },
+  '22099378400': { sku: 'k2-016', nome: 'Dupla Boho Começos Não Pedem Perfeição Pedem Movimento' },
+  '22097370673': { sku: '', nome: 'Quadro Carro Maverick Ford Clássico Retrô Vintage' },
+  '22094989967': { sku: '', nome: 'Placa MDF Cordinha Pet Petshop Loucos por Animais' },
+  '21830552385': { sku: '3084', nome: 'Plaquinha Seja Bem Vindo Respire Fundo Sorria' },
+  '21597636204': { sku: '', nome: 'Quadro Salão Mulher Negra Afro Trança Cabelo' },
+  '21572137937': { sku: '', nome: 'Plaquinha Personalizada Frase Sua Arte Parede Porta' },
+  '20797519107': { sku: '3181', nome: 'Quadro Loja Salto Preto Laço Sapato Moda Feminina' },
+  '20497634231': { sku: '', nome: 'Quadro Restaurante Bar Caipirinha Bebidas Decoração' },
+  '20399095139': { sku: '', nome: 'Quadro Sala Frase Motivação Walt O Que Quer Que Faça' },
+  '20397627989': { sku: '1151', nome: 'Quadro Carro Fusca Rebaixado Azul Clássico Retrô' },
+  '20230571906': { sku: '', nome: 'Plaquinha Mar Doce Lar Náutica Praia Litoral' },
+  '20099072243': { sku: '1424', nome: 'Quadro Loja Roupa Moda 4k Modelo Vestido Longo' },
+  '19999212391': { sku: '', nome: 'Quadro Barbearia Barber Shop Tesoura Vintage' },
+  '19997498992': { sku: '1423', nome: 'Quadro Loja Roupa Feminina Moda Manequim Vestido' },
+  '19099208226': { sku: '', nome: 'Quadro Barbearia Vintage Engraçado Tesoura Grande' },
+  '19030171584': { sku: '', nome: 'Plaquinha Água Salgada Alma Lavada Decoração Praiana' },
+  '18797424718': { sku: '', nome: 'Porta Chaves Grande 10 Ganchos Personalizado Foto' },
+  '18699208074': { sku: '2130', nome: 'Quadro Kombi Branco Verde Carro Clássico Vintage' },
+  '18359203737': { sku: '', nome: 'Porta Chaves Decorativo 15x21 Personalizar Foto' },
+  '18299212438': { sku: '1146', nome: 'Quadro Carro Esportivo Retrô Vermelho Sala Quarto' },
+  '18232382571': { sku: '', nome: 'Porta Chaves 15x21 Moldura Preta Branca Foto Casal' },
+  '18199077055': { sku: '', nome: 'Quadro Sala Frase Nesta Casa Pedimos Desculpas' },
+  '18197647770': { sku: '3396', nome: 'Quadro Salão Beleza Moda Modelo Cabelo Preto Liso' },
+  '18130552929': { sku: '', nome: 'Plaquinha Cantinho do Café Decoração Barata Presente' },
+  '17047722106': { sku: '', nome: 'Quadrinhos Decorativos Personalizados 19x19 Cordão' },
+  '16611281165': { sku: 'K046', nome: 'Trio Quadrinhos 19x19 Decoração Vintage Banheiro' },
+  '16081115884': { sku: '085', nome: 'Plaquinha Bem Vindo Ao Nosso Sonho Casa Nova' },
+  '15153488959': { sku: '', nome: 'Brinde Corporativo Porta Chaves Personalizado Logo' },
+  '14814020411': { sku: '', nome: '4 Quadros Decorativos Personalizados 34x44 Madeira' },
+  '14183361024': { sku: '', nome: 'Plaquinha Bem Vindos Ao Entrar Deus Abençõe' },
+  '12278414457': { sku: '', nome: 'Trio Cordinha Sisal Frase Religiosa Motivacional' },
+  '12142789367': { sku: 'PC059', nome: 'Porta Chaves Oração São Bento Cruz Sagrada' },
+  '11751588331': { sku: '', nome: 'Quadro 25x30 Bar Boteco Aviso Engraçado Cerveja' },
+  '11545970315': { sku: '', nome: 'Porta Chaves Pegou Tudo Carteira Orou Agradeceu' },
+  '11445970343': { sku: '', nome: 'Porta Chaves Personalizado Foto Casal Logo Frase' },
+  '11042573675': { sku: '2986-20x25', nome: 'Quadro Lavanderia Frase Guia Etiqueta Roupa' },
+  '10851569851': { sku: '', nome: 'Quadro Decorativo Personalizado Foto Arte Moldura' },
+  '9848308374': { sku: 'PC093', nome: 'Porta Cartas Decorativo Pet Arte Gatinhos' },
+  '9747429125': { sku: '001', nome: 'Plaquinha Paciência Dias Ruins Sorriso Dias Bons' },
+  '9648307770': { sku: '', nome: 'Porta Chaves Espírito de Deus Habita Neste Lar' },
+  '9348310219': { sku: 'PC086', nome: 'Porta Cartas O Amor Mora Aqui Suporte Carteira' },
+  '9247426857': { sku: '012', nome: 'Plaquinha Antes de Tudo Fé Depois Gratidão Floral' },
+  '9201052089': { sku: '3801-30x40', nome: 'Trio Consultório Odonto Dentista Fada Do Dente' },
+  '8747376225': { sku: '3034', nome: 'Plaquinha Mandamentos do Churrasqueiro' },
+  '8547358717': { sku: '030', nome: 'Plaquinha Deus é Bom o Tempo Todo' },
+  '8248302610': { sku: 'pc068', nome: 'Porta Cartas Suporte Carta Romero Brito Coração' },
+  '6887045224': { sku: '038', nome: 'Plaquinha Gratidão Amor Fé Família Floral Coração' },
+  '6087038398': { sku: '3053', nome: 'Plaquinha É Proibida Entrada de Más Energias Zen' },
+  '5773263181': { sku: '', nome: 'Porta Chaves Pegou Tudo Carteira Celular Orou 5 pinos' },
+  '5587262304': { sku: 'PC053', nome: 'Porta Chaves Suporte Correspondencias Cavalos Peão' },
+  '5291929490': { sku: '2730-20x25-preto', nome: 'Quadro 25x30 Banheiro Use Como Se Cometeu Um Crime' },
+  '4887055801': { sku: '', nome: 'Plaquinha Sou Grato Te Amo Hoponopono Meditação' },
+  '3887141054': { sku: '3013', nome: 'Plaquinha Eu e Minha Casa Serviremos Ao Senhor' },
+  '3566603823': { sku: '2892-30x40', nome: 'Trio 30x40 Consultório Odontológico Dentista Floral' },
+  '3190224062': { sku: 'PC030', nome: 'Porta Chaves Carro Praia Kombi Surf Suporte Carteira' },
+  '3040190860': { sku: '', nome: 'Plaquinha Cantinho do Café Cozinha Gourmet' },
+};
+
+// Índice inverso: SKU → ID
+const SHOPEE_SKU_MAP = {};
+for(const [id, v] of Object.entries(SHOPEE_MAP)){
+  if(v.sku) SHOPEE_SKU_MAP[v.sku.toLowerCase()] = id;
+}
+
+// ═══════════════════════════════════════════════════════
+// MAPA ML: MLB → { produto, custo_prod }
+// ═══════════════════════════════════════════════════════
+const MLB_MAP = {
+  "MLB6681169184":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB6600098814":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB6630710104":{"produto":"K2 30X40","custo_prod":34},"MLB6681943124":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB6486489402":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB4552302025":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4554841065":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB4645640869":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4667957965":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB6600109474":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4554788997":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB6505394148":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4545398225":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB6505755326":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB6500883314":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB4634107317":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4597347157":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB4552517513":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB6501245488":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB6682006618":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4554880989":{"produto":"Dupla 40x60 - ades.","custo_prod":80},"MLB4554880987":{"produto":"Dupla 40x60 - ades.","custo_prod":80},
+  "MLB4715035381":{"produto":"Espelho 1,60x60","custo_prod":99},"MLB3589873841":{"produto":"Espelho 1,60x60","custo_prod":99},
+  "MLB3507491643":{"produto":"Espelho 1,60x60","custo_prod":99},"MLB4409005906":{"produto":"Espelho 1,60x60","custo_prod":99},
+  "MLB4715009045":{"produto":"Espelho 1,60x60","custo_prod":99},"MLB4715036701":{"produto":"Espelho 1,60x60","custo_prod":99},
+  "MLB3590044955":{"produto":"Espelho 1,60x60","custo_prod":99},"MLB4617422643":{"produto":"K2 30X40","custo_prod":34},
+  "MLB6582723130":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3958528429":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB5872119316":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4410378171":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB3128785597":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB6594022006":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB6588567086":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4589818415":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB4269675427":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3130816646":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB5677589486":{"produto":"Placa Sisal C/4","custo_prod":10.5},"MLB3130790974":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB5677543436":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB5677568794":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB5677553086":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB6137616728":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB3139268977":{"produto":"Placa Sisal C/4","custo_prod":10.5},"MLB5677460702":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB5677437068":{"produto":"Placa Sisal C/4","custo_prod":10.5},"MLB4415960355":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB4415887621":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4415887623":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB3788246932":{"produto":"Placa Sisal C/1","custo_prod":5.1},"MLB3144558619":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB4419832985":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3130771894":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6143537926":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4563955751":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB4118248521":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3130823143":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB3885392192":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4534648908":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB2637124521":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB2172939753":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB6762313156":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB5482300436":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB4222198897":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3130820345":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB4407210533":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB2212272970":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB5751321346":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB5482032884":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6136999312":{"produto":"Placa Sisal C/4","custo_prod":10.5},"MLB3371191277":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB5751257458":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3130769151":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6143758774":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4677338727":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6768484488":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB6143744402":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB3129186884":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB4419941831":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB4419941661":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB3245522169":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB4118121143":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB4407081707":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6512912518":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB6518094292":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB6143720650":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB2637111705":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB4419871765":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB6143809712":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB2065779800":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB3139212773":{"produto":"Placa Sisal C/4","custo_prod":10.5},
+  "MLB4407069165":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB4407276775":{"produto":"Placa Sisal C/2","custo_prod":6.8},
+  "MLB4407198987":{"produto":"Placa Sisal C/2","custo_prod":6.8},"MLB5751163392":{"produto":"Placa Sisal C/3","custo_prod":7.5},
+  "MLB4175859477":{"produto":"Placa Sisal C/3","custo_prod":7.5},"MLB3426051479":{"produto":"Porta Chave/ Quadro 13x18","custo_prod":11.22},
+  "MLB6689201412":{"produto":"Porta Chave/ Quadro 13x18","custo_prod":11.22},"MLB4184425407":{"produto":"Quadro 20X25","custo_prod":13.6},
+  "MLB6170233210":{"produto":"Quadro 30X40","custo_prod":17},"MLB6171253858":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB6821927502":{"produto":"Quadro 30X40","custo_prod":17},"MLB4422102285":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB6171204834":{"produto":"Quadro 30X40","custo_prod":17},"MLB4421947313":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB3386874931":{"produto":"Quadro 30X40","custo_prod":17},"MLB6682006352":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB4422153779":{"produto":"Quadro 30X40","custo_prod":17},"MLB6847618558":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB4421973671":{"produto":"Quadro 30X40","custo_prod":17},"MLB4422038285":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB4422024921":{"produto":"Quadro 30X40","custo_prod":17},"MLB4612720403":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB4647274769":{"produto":"Quadro 30X40","custo_prod":17},"MLB4626003709":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB6652803664":{"produto":"Quadro 30X40","custo_prod":17},"MLB4645639991":{"produto":"Quadro 40X60","custo_prod":34},
+  "MLB4617158601":{"produto":"Quadro 40X60","custo_prod":34},"MLB3868666393":{"produto":"Quadro 40X60","custo_prod":34},
+  "MLB4640011133":{"produto":"Quadro 40X60","custo_prod":34},"MLB5382283920":{"produto":"Quadro 40X60","custo_prod":34},
+  "MLB6670495180":{"produto":"Quadro 40X60","custo_prod":34},"MLB6670610142":{"produto":"Quadro 60X90","custo_prod":69.9},
+  "MLB5321318136":{"produto":"Quadro 1,45x65","custo_prod":170},"MLB6699392144":{"produto":"Quadro 20X25","custo_prod":13.6},
+  "MLB4689267075":{"produto":"Quadro 1,50x1,00","custo_prod":272},"MLB6682005138":{"produto":"Quadro 1,20X55","custo_prod":119},
+  "MLB4775253404":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},"MLB2608293160":{"produto":"Quadro 30X40","custo_prod":17},
+  "MLB4617413783":{"produto":"Quadro 40X60","custo_prod":34},"MLB4473258303":{"produto":"K3 30X40","custo_prod":51},
+  "MLB6666494004":{"produto":"K3 30X40","custo_prod":51},"MLB2652671197":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},
+  "MLB4615810527":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},"MLB4502530643":{"produto":"Tábua Decorativa","custo_prod":11},
+  "MLB4502555933":{"produto":"Tábua Decorativa","custo_prod":11},"MLB6246798504":{"produto":"Tábua Decorativa","custo_prod":11},
+  "MLB4503604303":{"produto":"Tábua Decorativa","custo_prod":11},"MLB4702157689":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},
+  "MLB4702144665":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},"MLB4702169825":{"produto":"Mini Kit 3 pcs 19x19","custo_prod":15.3},
+  "MLB6647195658":{"produto":"Trio 40x60 - ades.","custo_prod":120},"MLB6639331310":{"produto":"Trio 40x60 - ades.","custo_prod":120},
+  "MLB6647190688":{"produto":"Trio 40x60 - ades.","custo_prod":120},"MLB4645033623":{"produto":"Trio 40x60 - ades.","custo_prod":120},
+};
+
+// Embalagem por tipo de produto
+const EMB_MAP = {
+  "Quadro 20X25":1.5,"Quadro 30X40":2,"Quadro 40X60":3,"Quadro 50X70":3.5,
+  "Quadro 60X90":25,"Quadro 1,20X55":30,"Quadro 1,45x65":40,"Quadro 1,50x1,00":45,
+  "Espelho 1,60x60":99,"Mini Kit 3 pcs 19x19":2,
+  "Placa Sisal C/1":0.8,"Placa Sisal C/2":0.8,"Placa Sisal C/3":0.8,"Placa Sisal C/4":0.8,
+  "Tábua Decorativa":2,"Porta Chave/ Quadro 13x18":1.5,
+  "K2 30X40":2,"K3 30X40":3,"Dupla 40x60 - ades.":3,"Trio 40x60 - ades.":4,
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE & HELPERS
+// ═══════════════════════════════════════════════════════
+let dados = [];
+let tabAtual = 'fat';
+let charts = {};
+let modo = 'hist';
+const KEY = 'ecom_v3';
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const R = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const P = v => (v*100).toFixed(1)+'%';
+const N = (v,p=2) => isNaN(v)?0:+v.toFixed(p);
+
+function salvar(){ try{ localStorage.setItem(KEY,JSON.stringify(dados)); atualizarBadge(); }catch(e){} }
+function carregar(){ try{ const r=localStorage.getItem(KEY); if(r){dados=JSON.parse(r); atualizarBadge(); return true;} }catch(e){} return false; }
+function atualizarBadge(){ document.getElementById('storage-size').textContent=`${dados.length} registros`; }
+
+function filtrar(){
+  const ano=document.getElementById('f-ano').value;
+  const mes=document.getElementById('f-mes').value;
+  const emp=document.getElementById('f-emp').value;
+  const canal=document.getElementById('f-canal').value;
+  return dados.filter(r=>{
+    if(ano && !r.mes_ano.endsWith(ano)) return false;
+    if(mes && !r.mes_ano.startsWith(mes+'/')) return false;
+    if(emp && r.empresa!==emp) return false;
+    if(canal && r.canal!==canal) return false;
+    return true;
+  });
+}
+
+function popularFiltros(){
+  const anos=[...new Set(dados.map(r=>r.mes_ano.split('/')[1]))].sort();
+  const meses=[...new Set(dados.map(r=>r.mes_ano.split('/')[0]))].sort();
+  const fa=document.getElementById('f-ano'), fm=document.getElementById('f-mes');
+  const va=fa.value, vm=fm.value;
+  fa.innerHTML='<option value="">Todos os anos</option>'+anos.map(a=>`<option ${a===va?'selected':''}>${a}</option>`).join('');
+  fm.innerHTML='<option value="">Todos os meses</option>'+meses.map(m=>`<option value="${m}" ${m===vm?'selected':''}>${MESES[+m-1]||m}</option>`).join('');
+}
+
+function limparDados(){
+  if(!confirm('⚠️ Limpar todos os dados? Não pode ser desfeito.')) return;
+  localStorage.removeItem(KEY); dados=[]; atualizarBadge(); popularFiltros(); renderAll(); renderDW();
+  alerta('info','🗑 Dados apagados.');
+}
+
+function alerta(tipo, msg){
+  const el=document.getElementById('msg-alert');
+  el.textContent=msg; el.className='alert '+tipo+' show';
+  setTimeout(()=>el.classList.remove('show'), 5000);
+}
+
+function setMode(m){
+  modo=m;
+  document.getElementById('sec-imp').style.display = m==='imp'?'block':'none';
+  document.getElementById('sec-daily').style.display = m==='daily'?'block':'none';
+  document.getElementById('sec-hist').style.display = m==='hist'?'block':'none';
+  document.getElementById('filtros').style.display = m==='hist'?'flex':'none';
+  ['nb-hist','nb-imp','nb-daily'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('nb-'+m).classList.add('active');
+  if(m==='daily') renderDW();
+}
+
+// ═══════════════════════════════════════════════════════
+// PARSE DE DATA
+// ═══════════════════════════════════════════════════════
+function parseDateStr(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(typeof v==='number'){ const d=new Date((v-25569)*86400000); return isNaN(d)?null:d; }
+  const s=String(v).trim();
+  let m;
+  // "31 de maio de 2026 21:52 hs." (ML format)
+  const meses_pt = {janeiro:0,fevereiro:1,março:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11};
+  const mpt = s.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
+  if(mpt){ const mes=meses_pt[mpt[2].toLowerCase()]; if(mes!==undefined) return new Date(+mpt[3],mes,+mpt[1]); }
+  // "2026-05-01"
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return new Date(+m[1],+m[2]-1,+m[3]);
+  // "31/05/2026"
+  if((m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/))) return new Date(+m[3],+m[2]-1,+m[1]);
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+
+function toKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function getMonday(d){ const dt=new Date(d); const day=dt.getDay(); dt.setDate(dt.getDate()+(day===0?-6:1-day)); dt.setHours(0,0,0,0); return dt; }
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR XLSX — MERCADO LIVRE
+// ═══════════════════════════════════════════════════════
+function parseML(ws){
+  const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+  // Encontra linha de cabeçalho (tem "# de anúncio" ou "Receita por produtos")
+  let hr=-1;
+  for(let i=0;i<Math.min(15,rows.length);i++){
+    const r=rows[i].map(v=>String(v).toLowerCase());
+    if(r.some(v=>v.includes('anúncio')||v.includes('receita por produtos'))&&r.some(v=>v.includes('data'))){ hr=i; break; }
+  }
+  if(hr===-1) return null;
+  const headers = rows[hr].map(h=>String(h).trim());
+  const fi = (...terms) => headers.findIndex(h=>terms.some(t=>h.toLowerCase().includes(t.toLowerCase())));
+
+  const iData  = fi('Data da venda','Data');
+  const iMLB   = fi('# de anúncio','Anúncio');
+  const iTitulo= fi('Título do anúncio','Título','Produto');
+  const iPreco = fi('Receita por produtos','Receita produto','Preço de Venda');
+  const iTv    = fi('Tarifa de venda e impostos','Tarifa de Venda');
+  const iTe    = fi('Tarifas de envio','Tarifa de Envio');
+  const iDep   = fi('Depósito','Loja oficial','Conta');
+  const iStatus= fi('Estado','Status');
+
+  if(iPreco===-1) return null;
+
+  const regs=[];
+  let emptyStreak=0;
+  for(let i=hr+1;i<rows.length;i++){
+    const row=rows[i];
+    const preco=Math.abs(parseFloat(String(row[iPreco]||0).replace(',','.'))||0);
+    if(preco===0){ if(++emptyStreak>=5) break; continue; }
+    emptyStreak=0;
+
+    // Ignorar cancelados com cancelamento = -valor
+    const status=iStatus>=0?String(row[iStatus]||'').toLowerCase():'';
+    if(status.includes('cancelad')) continue;
+    // Checar se tem reembolso completo (Total = 0)
+    const iTotal=fi('Total (BRL)','Total');
+    if(iTotal>=0){
+      const total=parseFloat(String(row[iTotal]||'').replace(',','.'))||null;
+      if(total!==null && Math.abs(total)<0.01) continue;
+    }
+
+    const mlb  = iMLB>=0 ? String(row[iMLB]||'').trim().toUpperCase() : '';
+    const titulo=iTitulo>=0?String(row[iTitulo]||'').trim():'';
+    const tv   =Math.abs(parseFloat(String(row[iTv]||0).replace(',','.'))||0);
+    const te   =Math.abs(parseFloat(String(row[iTe]||0).replace(',','.'))||0);
+
+    // Empresa — identifica pela coluna Loja oficial
+    let empresa='Black Vintage';
+    const iLoja=fi('Loja oficial','Loja Oficial');
+    if(iLoja>=0&&row[iLoja]){
+      const loja=String(row[iLoja]).toLowerCase();
+      if(loja.includes('anti estilhaco')||loja.includes('anti estilhaço')||loja.includes('ae anti')) empresa='Anti Estilhaço';
+      else if(loja.includes('artcup')) empresa='Artcup';
+      else if(loja.includes('black vintage')||loja.includes('bv ecom')||loja.includes('bvecom')) empresa='Black Vintage';
+    } else if(iDep>=0&&row[iDep]){
+      const dep=String(row[iDep]).toLowerCase();
+      if(dep.includes('anti estilhaco')||dep.includes('ae')) empresa='Anti Estilhaço';
+      else if(dep.includes('artcup')) empresa='Artcup';
+    }
+
+    // Custo via MLB
+    const mlbInfo=mlb?MLB_MAP[mlb]:null;
+    const custo_prod=mlbInfo?mlbInfo.custo_prod:0;
+    const produto=mlbInfo?mlbInfo.produto:(titulo.slice(0,60)||'(sem título)');
+    const emb=mlbInfo?(EMB_MAP[mlbInfo.produto]||2):0;
+
+    const d=parseDateStr(iData>=0?row[iData]:null);
+    const mes_ano=d?`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:'??/????';
+    const dia_key=d?toKey(d):null;
+    const aliq=empresa==='Artcup'?0.05:0.07;
+    const nf=N(preco*aliq);
+    const lucro=N(preco-tv-te-emb-custo_prod-nf);
+
+    regs.push({mes_ano,dia_key,empresa,canal:'Mercado Livre',produto,mlb,
+      preco:N(preco),tarifa_venda:N(tv),tarifa_envio:N(te),embalagem:N(emb),
+      custo_prod:N(custo_prod),nf,lucro,custo_mapeado:mlbInfo?1:0});
+  }
+  return regs;
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR XLSX — SHOPEE
+// ═══════════════════════════════════════════════════════
+function parseShopee(ws){
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+  let hr=-1;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    if(rows[i].some(v=>String(v).includes('ID do pedido'))){ hr=i; break; }
+  }
+  if(hr===-1) return null;
+  const headers=rows[hr].map(h=>String(h).trim());
+  const fi=(...terms)=>headers.findIndex(h=>terms.some(t=>h.toLowerCase().includes(t.toLowerCase())));
+
+  const iID    = fi('ID do pedido');
+  const iStatus= fi('Status do pedido');
+  const iData  = fi('Data de criação do pedido','Data criação');
+  const iNome  = fi('Nome do Produto');
+  const iSKU1  = fi('Nº de referência do SKU principal','SKU de referência','SKU principal');
+  const iSKU2  = fi('Número de referência SKU','Número de referência do SKU');
+  const iPreco = fi('Preço acordado','Subtotal do produto');
+  const iComLiq= fi('Taxa de comissão líquida');
+  const iServLiq=fi('Taxa de serviço líquida');
+  const iFreteVal=fi('Valor estimado do frete');
+  const iQtd   = fi('Quantidade');
+
+  if(iPreco===-1) return null;
+
+  const regs=[];
+  for(let i=hr+1;i<rows.length;i++){
+    const row=rows[i];
+    const status=String(row[iStatus]||'').toLowerCase();
+    if(status.includes('cancelad')) continue;
+
+    const preco=parseFloat(String(row[iPreco]||0).replace(',','.'))||0;
+    if(preco<=0) continue;
+
+    const qtd=iQtd>=0?(parseFloat(String(row[iQtd]||1))||1):1;
+    const comissao=Math.abs(parseFloat(String(row[iComLiq]||0).replace(',','.'))||0);
+    const servico=Math.abs(parseFloat(String(row[iServLiq]||0).replace(',','.'))||0);
+    const frete_val=parseFloat(String(row[iFreteVal]||0).replace(',','.'))||0;
+
+    // Identifica produto via SKU
+    const sku1=iSKU1>=0?String(row[iSKU1]||'').trim():'';
+    const sku2=iSKU2>=0?String(row[iSKU2]||'').trim():'';
+    const sku=sku1||sku2;
+    const shopeeId=SHOPEE_SKU_MAP[sku.toLowerCase()]||null;
+    const shopeeInfo=shopeeId?SHOPEE_MAP[shopeeId]:null;
+    const nomeOrig=iNome>=0?String(row[iNome]||'').trim():'';
+    const produto=shopeeInfo?shopeeInfo.nome:(nomeOrig.slice(0,60)||'(sem título)');
+
+    // Custo via nome do produto (Shopee não tem MLB, usa fallback por keyword)
+    const custoInfo=buscarCustoKeyword(produto+' '+sku);
+    const custo_prod=custoInfo?custoInfo.custo:0;
+    const emb=custoInfo?custoInfo.emb:0;
+
+    const d=parseDateStr(iData>=0?row[iData]:null);
+    const mes_ano=d?`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:'??/????';
+    const dia_key=d?toKey(d):null;
+    const nf=N(preco*0.07); // Shopee = Black Vintage = 7%
+    const lucro=N(preco-comissao-servico-emb-custo_prod-nf);
+
+    // Empresa Shopee: BVECOM7 no cupom = BVEcom, senão Black Vintage
+    const cupomShopee=iSKU1>=0?String(row[iSKU1]||''):'';
+    const codigoCupom=iSKU2>=0?String(row[iSKU2]||''):'';
+    // Verifica coluna Código do Cupom
+    const iCupomCode=fi('Código do Cupom','Cupom do vendedor','Código do cupom');
+    const cupomVal=iCupomCode>=0?String(row[iCupomCode]||'').toLowerCase():'';
+    // Também verifica todas as colunas de cupom
+    const rowStr=row.map(v=>String(v||'')).join('|').toLowerCase();
+    const empresaShopee=rowStr.includes('bvecom')?'BVEcom':'Black Vintage';
+    regs.push({mes_ano,dia_key,empresa:empresaShopee,canal:'Shopee',produto,sku,
+      preco:N(preco),tarifa_venda:N(comissao),tarifa_envio:N(servico+frete_val),
+      embalagem:N(emb),custo_prod:N(custo_prod),nf,lucro,custo_mapeado:custoInfo?1:0});
+  }
+  return regs;
+}
+
+// ── Busca custo por keywords no nome do produto (Shopee fallback) ──
+const CUSTO_KW=[
+  {kw:['espelho','160x60','1,60x60','160 x 60'],custo:99,emb:45},
+  {kw:['espelho','150x50','1,50x50'],custo:104,emb:40},
+  {kw:['espelho','120x50','1,20x50'],custo:84.5,emb:35},
+  {kw:['trio','40x60'],custo:120,emb:4},
+  {kw:['dupla','40x60','dual 40'],custo:80,emb:3},
+  {kw:['60x90','60 x 90'],custo:69.9,emb:25},
+  {kw:['40x60','40 x 60'],custo:34,emb:3},
+  {kw:['30x40','30 x 40'],custo:17,emb:2},
+  {kw:['20x25','20 x 25'],custo:13.6,emb:1.5},
+  {kw:['45x65','45 x 65'],custo:34,emb:3},
+  {kw:['53x73','53 x 73'],custo:40.8,emb:3.5},
+  {kw:['65x95','65 x 95'],custo:69.9,emb:25},
+  {kw:['mini kit','19x19'],custo:15.3,emb:2},
+  {kw:['trio','30x40'],custo:51,emb:3},
+  {kw:['k3','30x40'],custo:51,emb:3},
+  {kw:['k2','30x40'],custo:34,emb:2},
+  {kw:['sisal','4 peças','4 placas','c/4'],custo:10.5,emb:0.8},
+  {kw:['sisal','3 peças','3 placas','c/3'],custo:7.5,emb:0.8},
+  {kw:['sisal','2 peças','2 placas','c/2'],custo:6.8,emb:0.8},
+  {kw:['sisal','5 peças','5 placas'],custo:13.5,emb:0.8},
+  {kw:['plaquinha','mdf','placa'],custo:7.5,emb:0.8},
+  {kw:['tábua','tabua'],custo:11,emb:2},
+  {kw:['porta chaves','porta cartas'],custo:11.22,emb:1.5},
+];
+
+function buscarCustoKeyword(nome){
+  const n=nome.toLowerCase();
+  for(const c of CUSTO_KW){
+    if(c.kw.every(k=>n.includes(k.toLowerCase()))){ return {custo:c.custo,emb:c.emb}; }
+    if(c.kw.length>1 && c.kw.some(k=>n.includes(k.toLowerCase()))){ /* precisa de match parcial */ }
+  }
+  // tenta match único
+  for(const c of CUSTO_KW){
+    if(c.kw.length===1 && n.includes(c.kw[0].toLowerCase())) return {custo:c.custo,emb:c.emb};
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR (orquestrador)
+// ═══════════════════════════════════════════════════════
+function importar(input){
+  const file=input.files[0]; if(!file) return;
+  alerta('info','⏳ Lendo arquivo…');
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+      let novos=[], fonte='';
+
+      for(const sn of wb.SheetNames){
+        const ws=wb.Sheets[sn];
+        const snl=sn.toLowerCase();
+        // Detecta ML ou Shopee pelo nome da aba ou conteúdo
+        const sample=XLSX.utils.sheet_to_csv(ws).slice(0,500).toLowerCase();
+        if(snl.includes('vendas') || sample.includes('# de anúncio') || sample.includes('tarifa de venda')){
+          const r=parseML(ws);
+          if(r&&r.length){ novos=[...novos,...r]; fonte='Mercado Livre'; }
+        } else if(snl.includes('order') || sample.includes('id do pedido') || sample.includes('taxa de comissão')){
+          const r=parseShopee(ws);
+          if(r&&r.length){ novos=[...novos,...r]; fonte='Shopee'; }
+        }
+      }
+
+      if(!novos.length){ alerta('err','⚠ Nenhum registro encontrado. Verifique o arquivo.'); input.value=''; return; }
+
+      // Deduplicação por dia+empresa+canal
+      const diasNovos=new Set(novos.filter(r=>r.dia_key).map(r=>`${r.dia_key}|${r.empresa}|${r.canal}`));
+      const mesesNovos=new Set(novos.filter(r=>!r.dia_key).map(r=>`${r.mes_ano}|${r.empresa}|${r.canal}`));
+      dados=dados.filter(r=>{
+        if(r.dia_key) return !diasNovos.has(`${r.dia_key}|${r.empresa}|${r.canal}`);
+        return !mesesNovos.has(`${r.mes_ano}|${r.empresa}|${r.canal}`);
+      });
+      dados=[...dados,...novos];
+      salvar();
+
+      const mapeados=novos.filter(r=>r.custo_mapeado).length;
+      const semCusto=novos.filter(r=>!r.custo_mapeado).length;
+      const dias=[...new Set(novos.filter(r=>r.dia_key).map(r=>r.dia_key))].sort();
+      let msg=`✓ ${novos.length} registros importados (${fonte})`;
+      if(dias.length) msg+=` · dias: ${dias.map(d=>d.split('-').reverse().join('/')).join(', ')}`;
+      if(mapeados) msg+=` · 🎯 ${mapeados} com custo mapeado`;
+      if(semCusto) msg+=` · ⚠ ${semCusto} sem custo`;
+      alerta('ok',msg);
+
+      popularFiltros(); renderAll(); setMode('hist');
+      input.value='';
+    }catch(err){ alerta('err','⚠ Erro: '+err.message); console.error(err); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER HISTÓRICO
+// ═══════════════════════════════════════════════════════
+function renderAll(){
+  const d=filtrar();
+  const tot=f=>d.reduce((s,r)=>s+(r[f]||0),0);
+
+  if(!d.length){
+    ['k-fat','k-lucro','k-ticket','k-tarifas','k-custo','k-emb','k-nf'].forEach(id=>document.getElementById(id).textContent='—');
+    ['k-qtd','k-margem','k-tar-pct','k-cus-pct','k-emb-pct','k-nf-aliq'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('top-tbl').innerHTML='<div class="empty"><span class="empty-ico">📦</span>Nenhum dado para os filtros.</div>';
+    ['fat','lucro','emp','canal','custos'].forEach(k=>{if(charts[k])charts[k].destroy()});
+    return;
+  }
+
+  const fat=tot('preco'),lucro=tot('lucro'),tarifas=tot('tarifa_venda')+tot('tarifa_envio');
+  const custo=tot('custo_prod'),emb=tot('embalagem'),nf=tot('nf'),qtd=d.length;
+
+  document.getElementById('k-fat').textContent=R(fat);
+  document.getElementById('k-qtd').textContent=`${qtd} pedidos`;
+  document.getElementById('k-lucro').textContent=R(lucro);
+  document.getElementById('k-margem').textContent=`margem ${P(lucro/fat)}`;
+  document.getElementById('k-ticket').textContent=R(fat/qtd);
+  document.getElementById('k-tarifas').textContent=R(tarifas);
+  document.getElementById('k-tar-pct').textContent=P(tarifas/fat)+' do faturamento';
+  document.getElementById('k-custo').textContent=R(custo);
+  document.getElementById('k-cus-pct').textContent=P(custo/fat)+' do faturamento';
+  document.getElementById('k-emb').textContent=R(emb);
+  document.getElementById('k-emb-pct').textContent=P(emb/fat)+' do faturamento';
+  document.getElementById('k-nf').textContent=R(nf);
+  document.getElementById('k-nf-aliq').textContent=`impostos estimados`;
+
+  // Alerta sem custo
+  const semCusto=d.filter(r=>!r.custo_mapeado).length;
+  const warnEl=document.getElementById('sem-custo-warn');
+  warnEl.innerHTML=semCusto>0?`<span class="warn-badge">⚠ ${semCusto} sem custo mapeado</span>`:'';
+
+  // Chart mensal
+  const byMes={};
+  d.forEach(r=>{ if(!byMes[r.mes_ano]) byMes[r.mes_ano]={v:0,l:0}; byMes[r.mes_ano].v+=r.preco; byMes[r.mes_ano].l+=r.lucro; });
+  const meses=Object.keys(byMes).sort((a,b)=>{ const[ma,ya]=a.split('/');const[mb,yb]=b.split('/'); return ya!==yb?ya-yb:ma-mb; });
+  mkChart('fat','bar',meses,[{label:'Faturamento',data:meses.map(m=>N(byMes[m].v)),backgroundColor:'rgba(0,214,143,0.55)',borderRadius:5}]);
+  mkChart('lucro','bar',meses,[{label:'Lucro',data:meses.map(m=>N(byMes[m].l)),backgroundColor:'rgba(77,166,255,0.55)',borderRadius:5}]);
+
+  // Donut empresa
+  const empM={};
+  d.forEach(r=>{ empM[r.empresa]=(empM[r.empresa]||0)+r.preco; });
+  const ek=Object.keys(empM);
+  mkChart('emp','doughnut',ek,[{data:ek.map(k=>N(empM[k])),backgroundColor:['rgba(77,166,255,.7)','rgba(168,123,255,.7)','rgba(0,214,143,.7)'],borderColor:'transparent'}]);
+
+  const canalM={};
+  d.forEach(r=>{ canalM[r.canal]=(canalM[r.canal]||0)+r.preco; });
+  const ck=Object.keys(canalM);
+  mkChart('canal','doughnut',ck,[{data:ck.map(k=>N(canalM[k])),backgroundColor:['rgba(255,200,58,.7)','rgba(255,140,66,.7)','rgba(0,214,143,.7)'],borderColor:'transparent'}]);
+
+  // Donut custos
+  mkChart('custos','doughnut',['Produto','Embalagem','Tarifas','NF'],
+    [{data:[N(custo),N(emb),N(tarifas),N(nf)],backgroundColor:['rgba(255,200,58,.7)','rgba(255,140,66,.7)','rgba(255,77,109,.7)','rgba(168,123,255,.7)'],borderColor:'transparent'}]);
+
+  renderTop(d);
+  renderDetalhe();
+}
+
+function mkChart(id,type,labels,datasets){
+  if(charts[id]) charts[id].destroy();
+  const ctx=document.getElementById('ch-'+id).getContext('2d');
+  const isDn=type==='doughnut';
+  charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:isDn,position:'right',labels:{color:'#8890a8',boxWidth:10,font:{size:10}}}},
+    scales:isDn?{}:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8890a8',callback:v=>R(v)}},x:{grid:{display:false},ticks:{color:'#8890a8'}}}
+  }});
+}
+
+function setTab(t,btn){
+  tabAtual=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTop(filtrar());
+}
+
+function renderTop(d){
+  const pm={};
+  d.forEach(r=>{
+    const k=r.produto;
+    if(!pm[k]) pm[k]={v:0,l:0,q:0,emp:r.empresa,canal:r.canal,custo:r.custo_prod,ids:new Set(),skus:new Set()};
+    pm[k].v+=r.preco; pm[k].l+=r.lucro; pm[k].q++;
+    if(r.mlb) pm[k].ids.add(r.mlb);
+    if(r.sku) pm[k].skus.add(r.sku);
+  });
+  let rows=Object.entries(pm).map(([n,v])=>({nome:n,...v,id_str:[...v.ids,...v.skus].slice(0,2).join(', ')}));
+  rows.sort((a,b)=>tabAtual==='fat'?b.v-a.v:tabAtual==='lucro'?b.l-a.l:b.q-a.q);
+  const maxV=rows[0]?.v||1;
+  const wrap=document.getElementById('top-tbl');
+  if(!rows.length){ wrap.innerHTML='<div class="empty"><span class="empty-ico">📦</span>Sem dados.</div>'; return; }
+  wrap.innerHTML=`<table><thead><tr>
+    <th>#</th><th>Produto</th><th>ID/SKU</th><th>Empresa</th><th>Canal</th>
+    <th>Custo unit.</th><th>Faturamento</th><th>Lucro</th><th>Qtd</th><th>Share</th>
+  </tr></thead><tbody>${rows.slice(0,30).map((r,i)=>`<tr>
+    <td style="color:var(--text3)">${i+1}</td>
+    <td class="td-name" title="${r.nome}">${r.nome}</td>
+    <td class="td-id" title="${r.id_str}">${r.id_str||'—'}</td>
+    <td><span class="badge ${r.emp==='Artcup'?'art':'bv'}">${r.emp}</span></td>
+    <td><span class="badge ${r.canal==='Shopee'?'sh':'ml'}">${r.canal}</span></td>
+    <td class="y">${r.custo>0?R(r.custo):'—'}</td>
+    <td class="g">${R(r.v)}</td>
+    <td class="${r.l>=0?'g':'r'}">${R(r.l)}</td>
+    <td>${r.q}</td>
+    <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${(r.v/maxV*100).toFixed(1)}%"></div></div></div></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER DIÁRIO/SEMANAL
+// ═══════════════════════════════════════════════════════
+function renderDW(){
+  const emp=document.getElementById('dw-emp')?.value||'';
+  const base=dados.filter(r=>!emp||r.empresa===emp);
+  const byDay={};
+  base.forEach(r=>{ if(!r.dia_key) return; if(!byDay[r.dia_key]) byDay[r.dia_key]={v:0,l:0,q:0}; byDay[r.dia_key].v+=r.preco; byDay[r.dia_key].l+=r.lucro; byDay[r.dia_key].q++; });
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const todayK=toKey(today), yesterK=toKey(addDays(today,-1));
+  const td=byDay[todayK]||{v:0,l:0,q:0}, yd=byDay[yesterK]||{v:0,l:0,q:0};
+
+  renderMetaPanel();
+  document.getElementById('dw-day').innerHTML=`
+    <div class="dw-card"><div class="dw-card-lbl">📅 Hoje (${today.getDate()}/${today.getMonth()+1})</div><div class="dw-card-val">${R(td.v)}</div><div class="dw-card-sub">Lucro: ${R(td.l)} · ${td.q} pedidos</div></div>
+    <div class="dw-card"><div class="dw-card-lbl">⬅ Ontem</div><div class="dw-card-val">${R(yd.v)}</div><div class="dw-card-sub">Lucro: ${R(yd.l)} · ${yd.q} pedidos</div></div>`;
+
+  const mon=getMonday(today);
+  let wv=0,wl=0,wq=0;
+  const wdays=[];
+  for(let i=0;i<7;i++){
+    const d2=addDays(mon,i), k=toKey(d2), dd=byDay[k]||{v:0,l:0,q:0};
+    wdays.push({d:d2,k,...dd});
+    if(d2<=today){wv+=dd.v;wl+=dd.l;wq+=dd.q;}
+  }
+  const prevMon=addDays(mon,-7);
+  let pvw=0;
+  for(let i=0;i<7;i++) pvw+=(byDay[toKey(addDays(prevMon,i))]||{v:0}).v;
+  const delta=pvw>0?((wv-pvw)/pvw*100).toFixed(1):null;
+  const sun=addDays(mon,6);
+  document.getElementById('dw-week-range').textContent=`${mon.getDate()}/${mon.getMonth()+1}–${sun.getDate()}/${sun.getMonth()+1}`;
+  document.getElementById('dw-week').innerHTML=`
+    <div class="dw-card wk"><div class="dw-card-lbl">Vendas semana</div><div class="dw-card-val">${R(wv)}</div><div class="dw-card-sub">${delta!==null?(+delta>=0?'▲':'▼')+Math.abs(delta)+'% vs sem. ant.':''} · ${wq} ped.</div></div>
+    <div class="dw-card wk"><div class="dw-card-lbl">Lucro semana</div><div class="dw-card-val">${R(wl)}</div><div class="dw-card-sub">Margem: ${wv>0?P(wl/wv):'—'}</div></div>`;
+
+  const maxB=Math.max(...wdays.map(d=>d.v),1);
+  const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  document.getElementById('week-bars').innerHTML=wdays.map((d,i)=>{
+    const h=Math.round((d.v/maxB)*44);
+    return `<div class="wbar-col"><div class="wbar-fill${d.k===todayK?' cur':''}" style="height:${h}px" title="${R(d.v)}"></div><div class="wbar-lbl">${DOW[i]}</div></div>`;
+  }).join('');
+
+  const last7=[];
+  for(let i=6;i>=0;i--){
+    const d2=addDays(today,-i), k=toKey(d2), dd=byDay[k]||{v:0,l:0,q:0};
+    const prev=(byDay[toKey(addDays(d2,-1))]||{v:0}).v;
+    const dlt=prev>0?((dd.v-prev)/prev*100).toFixed(1):null;
+    last7.push({d:d2,k,...dd,dlt});
+  }
+  document.getElementById('dw-tbody').innerHTML=last7.reverse().map(r=>{
+    const lbl=r.k===todayK?'<span style="color:var(--accent);font-size:9px">HOJE</span> ':r.k===yesterK?'<span style="color:var(--text3);font-size:9px">ONTEM</span> ':'';
+    const cls=r.dlt===null?'trend-flat':+r.dlt>=0?'trend-up':'trend-dn';
+    const icon=r.dlt===null?'—':+r.dlt>=0?`▲${r.dlt}%`:`▼${Math.abs(r.dlt)}%`;
+    return `<tr><td>${lbl}${r.d.getDate()}/${r.d.getMonth()+1}</td><td class="g">${R(r.v)}</td><td class="g">${R(r.l)}</td><td>${r.q}</td><td><span class="${cls}">${icon}</span></td></tr>`;
+  }).join('');
+
+  const wl4=[],wd4=[];
+  for(let w=3;w>=0;w--){
+    const m2=addDays(mon,-w*7); let wv2=0;
+    for(let i=0;i<7;i++) wv2+=(byDay[toKey(addDays(m2,i))]||{v:0}).v;
+    const s2=addDays(m2,6);
+    wd4.push(`${m2.getDate()}/${m2.getMonth()+1}–${s2.getDate()}/${s2.getMonth()+1}`);
+    wl4.push(N(wv2));
+  }
+  if(charts['weeks']) charts['weeks'].destroy();
+  const ctx=document.getElementById('ch-weeks').getContext('2d');
+  charts['weeks']=new Chart(ctx,{type:'bar',data:{labels:wd4,datasets:[{label:'Vendas',data:wl4,backgroundColor:wd4.map((_,i)=>i===3?'rgba(0,214,143,.7)':'rgba(77,166,255,.4)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8890a8',callback:v=>R(v)}},x:{grid:{display:false},ticks:{color:'#8890a8'}}}}});
+}
+
+// Drag & drop
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(f){const inp=document.getElementById('f-xlsx');const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;importar(inp);}
+});
+
+
+
+// ═══════════════════════════════════════════════════════
+// DETALHE POR DIA
+// ═══════════════════════════════════════════════════════
+function filtroHoje(){
+  const d=toKey(new Date());
+  document.getElementById('f-data-ini').value=d;
+  document.getElementById('f-data-fim').value=d;
+  renderDetalhe();
+}
+function filtroSemana(){
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const mon=getMonday(hoje);
+  document.getElementById('f-data-ini').value=toKey(mon);
+  document.getElementById('f-data-fim').value=toKey(addDays(mon,6));
+  renderDetalhe();
+}
+function filtroMes(){
+  const hoje=new Date();
+  const ini=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  const fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+  document.getElementById('f-data-ini').value=toKey(ini);
+  document.getElementById('f-data-fim').value=toKey(fim);
+  renderDetalhe();
+}
+function limparFiltroData(){
+  document.getElementById('f-data-ini').value='';
+  document.getElementById('f-data-fim').value='';
+  renderDetalhe();
+}
+
+function renderDetalhe(){
+  const ini=document.getElementById('f-data-ini').value;
+  const fim=document.getElementById('f-data-fim').value;
+  const emp=document.getElementById('f-emp').value;
+  const canal=document.getElementById('f-canal').value;
+
+  let base=filtrar(); // já aplica filtros de ano/mes/emp/canal
+
+  // Filtra por intervalo de data
+  if(ini||fim){
+    base=base.filter(r=>{
+      if(!r.dia_key) return false;
+      if(ini && r.dia_key < ini) return false;
+      if(fim && r.dia_key > fim) return false;
+      return true;
+    });
+  }
+
+  // Cards macro
+  const tot=f=>base.reduce((s,r)=>s+(r[f]||0),0);
+  const fat=tot('preco'),lucro=tot('lucro'),tarifas=tot('tarifa_venda')+tot('tarifa_envio');
+  const custo=tot('custo_prod'),emb=tot('embalagem'),nf=tot('nf'),qtd=base.length;
+
+  document.getElementById('detail-count').textContent=`${qtd} pedidos`;
+  document.getElementById('day-summary').innerHTML=!qtd?'':`
+    <div class="day-sum-card"><div class="day-sum-lbl">Faturamento</div><div class="day-sum-val g">${R(fat)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">Lucro líquido</div><div class="day-sum-val g">${R(lucro)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">Tarifas</div><div class="day-sum-val r">${R(tarifas)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">Custo produto</div><div class="day-sum-val y">${R(custo)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">Embalagens</div><div class="day-sum-val o">${R(emb)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">NF/Impostos</div><div class="day-sum-val p">${R(nf)}</div></div>
+    <div class="day-sum-card"><div class="day-sum-lbl">Margem</div><div class="day-sum-val ${lucro>=0?'g':'r'}">${fat>0?P(lucro/fat):'—'}</div></div>
+  `;
+
+  const wrap=document.getElementById('detail-tbl');
+  if(!base.length){
+    wrap.innerHTML='<div class="empty"><span class="empty-ico">🔍</span>Nenhuma venda no período selecionado.</div>';
+    return;
+  }
+
+  // Ordena por data desc, depois por empresa
+  const sorted=[...base].sort((a,b)=>{
+    if((b.dia_key||'') !== (a.dia_key||'')) return (b.dia_key||'') > (a.dia_key||'') ? 1 : -1;
+    return a.empresa.localeCompare(b.empresa);
+  });
+
+  // Agrupa por dia para mostrar subtotais
+  const byDia={};
+  sorted.forEach(r=>{
+    const k=r.dia_key||r.mes_ano;
+    if(!byDia[k]) byDia[k]=[];
+    byDia[k].push(r);
+  });
+
+  let rows='';
+  for(const [dia,items] of Object.entries(byDia).sort((a,b)=>b[0]>a[0]?1:-1)){
+    // Subtotal do dia
+    const dFat=items.reduce((s,r)=>s+r.preco,0);
+    const dLucro=items.reduce((s,r)=>s+r.lucro,0);
+    const dTar=items.reduce((s,r)=>s+r.tarifa_venda+r.tarifa_envio,0);
+    const dCusto=items.reduce((s,r)=>s+r.custo_prod,0);
+    const dEmb=items.reduce((s,r)=>s+r.embalagem,0);
+    const dNf=items.reduce((s,r)=>s+r.nf,0);
+    // Formata data
+    let diaLabel=dia;
+    if(dia.match(/^\d{4}-\d{2}-\d{2}$/)){
+      const [y,m,d]=dia.split('-');
+      diaLabel=`${d}/${m}/${y}`;
+    }
+    rows+=`<tr style="background:var(--bg3)">
+      <td colspan="2" style="font-weight:700;color:var(--text);font-family:var(--font);font-size:11px">📅 ${diaLabel} <span style="color:var(--text3);font-weight:400">${items.length} pedidos</span></td>
+      <td colspan="2"></td>
+      <td class="${dLucro>=0?'g':'r'}" style="font-weight:700">${R(dLucro)}</td>
+      <td class="r">${R(dTar)}</td>
+      <td class="y">${R(dCusto)}</td>
+      <td class="o">${R(dEmb)}</td>
+      <td class="p">${R(dNf)}</td>
+      <td class="g" style="font-weight:700">${R(dFat)}</td>
+    </tr>`;
+    items.forEach(r=>{
+      const empBadge=r.empresa==='Anti Estilhaço'?'art':r.empresa==='BVEcom'?'ml':'bv';
+      const canalBadge=r.canal==='Shopee'?'sh':'ml';
+      rows+=`<tr>
+        <td class="td-name" title="${r.produto}" style="padding-left:20px">${r.produto}</td>
+        <td style="white-space:nowrap">
+          <span class="badge ${empBadge}">${r.empresa}</span>
+          <span class="badge ${canalBadge}" style="margin-left:3px">${r.canal}</span>
+        </td>
+        <td class="td-id">${r.mlb||r.sku||'—'}</td>
+        <td class="g">${R(r.preco)}</td>
+        <td class="${r.lucro>=0?'g':'r'}">${R(r.lucro)}</td>
+        <td class="r">${R(r.tarifa_venda+r.tarifa_envio)}</td>
+        <td class="y">${R(r.custo_prod)}</td>
+        <td class="o">${R(r.embalagem)}</td>
+        <td class="p">${R(r.nf)}</td>
+        <td class="g">${R(r.preco)}</td>
+      </tr>`;
+    });
+  }
+
+  wrap.innerHTML=`<table><thead><tr>
+    <th>Produto</th><th>Empresa / Canal</th><th>ID/SKU</th>
+    <th>Venda</th><th>Lucro</th><th>Tarifas</th><th>Custo prod.</th><th>Embalagem</th><th>NF</th><th>Total</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+
+// ═══════════════════════════════════════════════════════
+// SISTEMA DE METAS
+// ═══════════════════════════════════════════════════════
+const META_KEY = 'ecom_metas_v1';
+let metas = {}; // { '06/2026': 15000, '07/2026': 18000, ... }
+
+function carregarMetas(){
+  try{ const r=localStorage.getItem(META_KEY); if(r) metas=JSON.parse(r); }catch(e){}
+}
+function salvarMetasStorage(){
+  try{ localStorage.setItem(META_KEY,JSON.stringify(metas)); }catch(e){}
+}
+
+function abrirModal(){
+  // Gera campos para meses com dados + próximos 3 meses
+  const hoje = new Date();
+  const mesesDados = [...new Set(dados.map(r=>r.mes_ano))].sort((a,b)=>{
+    const[ma,ya]=a.split('/');const[mb,yb]=b.split('/');
+    return ya!==yb?ya-yb:ma-mb;
+  });
+  // Adiciona mês atual e próximos 2
+  for(let i=0;i<3;i++){
+    const d=new Date(hoje.getFullYear(),hoje.getMonth()+i,1);
+    const k=`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    if(!mesesDados.includes(k)) mesesDados.push(k);
+  }
+  const campos = document.getElementById('modal-fields');
+  campos.innerHTML = mesesDados.map(m=>`
+    <div class="modal-field">
+      <label>${MESES[+m.split('/')[0]-1]} ${m.split('/')[1]}</label>
+      <input type="number" id="meta-${m.replace('/','_')}" placeholder="R$ meta lucro" 
+             value="${metas[m]||''}" min="0" step="100">
+    </div>
+  `).join('');
+  document.getElementById('modal-metas').classList.add('open');
+}
+
+function fecharModal(){
+  document.getElementById('modal-metas').classList.remove('open');
+}
+
+function salvarMetas(){
+  const inputs = document.querySelectorAll('#modal-fields input');
+  inputs.forEach(inp=>{
+    const mesKey = inp.id.replace('meta-','').replace('_','/');
+    const val = parseFloat(inp.value)||0;
+    if(val>0) metas[mesKey]=val;
+    else delete metas[mesKey];
+  });
+  salvarMetasStorage();
+  fecharModal();
+  renderDW();
+  alerta('ok','✓ Metas salvas!');
+}
+
+// Fecha modal ao clicar fora
+document.getElementById('modal-metas').addEventListener('click',function(e){
+  if(e.target===this) fecharModal();
+});
+
+function renderMetaPanel(){
+  const emp=document.getElementById('dw-emp')?.value||'';
+  const base=dados.filter(r=>(!emp||r.empresa===emp));
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const mesAtualKey=`${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+
+  // Pega meses que têm meta ou têm dados
+  const mesesComMeta=Object.keys(metas);
+  const mesesComDados=[...new Set(base.map(r=>r.mes_ano))];
+  const todosMeses=[...new Set([...mesesComMeta,...mesesComDados])].sort((a,b)=>{
+    const[ma,ya]=a.split('/');const[mb,yb]=b.split('/');
+    return ya!==yb?ya-yb:ma-mb;
+  }).slice(-4); // últimos 4 meses
+
+  if(!todosMeses.length){
+    document.getElementById('meta-grid').innerHTML='<div style="color:var(--text3);font-size:12px">Clique em "Editar metas" para cadastrar suas metas mensais.</div>';
+    return;
+  }
+
+  const grid = document.getElementById('meta-grid');
+  grid.innerHTML = todosMeses.map(mesKey=>{
+    const [mm,yy] = mesKey.split('/');
+    const nomeMes = `${MESES[+mm-1]} ${yy}`;
+    const meta = metas[mesKey]||0;
+    const lucroMes = base.filter(r=>r.mes_ano===mesKey).reduce((s,r)=>s+r.lucro,0);
+    const isAtual = mesKey===mesAtualKey;
+
+    if(!meta){
+      return `<div class="meta-item">
+        <div class="meta-label">${nomeMes} ${isAtual?'<span style="color:var(--accent);font-size:9px">● ATUAL</span>':''}</div>
+        <div style="font-size:10px;color:var(--text3)">Sem meta cadastrada · Lucro: <span style="font-family:var(--mono);color:var(--text)">${R(lucroMes)}</span></div>
+      </div>`;
+    }
+
+    const pct = meta>0 ? Math.min((lucroMes/meta)*100, 150) : 0;
+    const pctReal = meta>0 ? (lucroMes/meta)*100 : 0;
+    const falta = meta - lucroMes;
+    const metaSemanal = meta/4;
+
+    // Cor da barra
+    let barClass;
+    if(pctReal>=100) barClass='over';
+    else if(pctReal>=70) barClass='ok';
+    else if(pctReal>=40) barClass='warn';
+    else barClass='danger';
+
+    // Ritmo diário (só para mês atual)
+    let ritmoHtml='';
+    if(isAtual){
+      const diasNoMes=new Date(+yy,+mm,0).getDate();
+      const diaAtual=hoje.getDate();
+      const diasRestantes=diasNoMes-diaAtual+1;
+      const ritmoNecessario=falta>0?(falta/diasRestantes):0;
+      // lucro médio dos últimos 7 dias
+      const l7=[];
+      for(let i=6;i>=0;i--){
+        const dk=toKey(addDays(hoje,-i));
+        const dl=base.filter(r=>r.dia_key===dk).reduce((s,r)=>s+r.lucro,0);
+        l7.push(dl);
+      }
+      const mediaL7=l7.reduce((s,v)=>s+v,0)/7;
+      const projecao=lucroMes+(mediaL7*diasRestantes);
+      const vaiBater=projecao>=meta;
+      ritmoHtml=`<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span class="ritmo-chip ${vaiBater?'ok':'danger'}">${vaiBater?'✓ No ritmo':'⚠ Abaixo do ritmo'}</span>
+        <span style="font-size:10px;color:var(--text3)">Projeção: <span style="font-family:var(--mono);color:${vaiBater?'var(--green)':'var(--red)'}">${R(projecao)}</span></span>
+        <span style="font-size:10px;color:var(--text3)">Meta/sem: <span style="font-family:var(--mono);color:var(--text)">${R(metaSemanal)}</span></span>
+      </div>`;
+    }
+
+    return `<div class="meta-item">
+      <div class="meta-label">
+        ${nomeMes} ${isAtual?'<span style="color:var(--accent);font-size:9px">● ATUAL</span>':''}
+        <span>${R(lucroMes)} / ${R(meta)}</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill ${barClass}" style="width:${Math.min(pct,100)}%"></div>
+      </div>
+      <div class="meta-nums">
+        <span class="${pctReal>=100?'over':'done'}" style="font-size:13px;font-weight:700">${pctReal.toFixed(1)}%</span>
+        <span class="rest">${pctReal>=100?'🎉 Meta batida! +'+R(Math.abs(falta)):R(falta)+' para a meta'}</span>
+      </div>
+      ${ritmoHtml}
+    </div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+carregarMetas();
+const ok=carregar();
+popularFiltros();
+renderAll();
+if(ok && dados.length) alerta('ok',`✓ ${dados.length} registros carregados.`);
+</script>
+
+<!-- MODAL METAS -->
+<div class="modal-bg" id="modal-metas">
+  <div class="modal">
+    <h3>🎯 Metas mensais de lucro líquido</h3>
+    <div class="modal-grid" id="modal-fields"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-save" onclick="salvarMetas()">Salvar metas</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
